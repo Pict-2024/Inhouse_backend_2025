@@ -33,6 +33,15 @@ class BaseModel {
     return results;
   }
 
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++STUDENT 
+  async getBySID(S_ID,username) {
+    console.log('table name and sid: ', S_ID, username, this.tableName);
+    const query = `SELECT * FROM ${this.tableName} WHERE S_ID = ? AND Username=?`;
+    const results = await sql.query(query, [S_ID,username]);
+    return results;
+  }
+  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
   async create(newData) {
     // 
     const columns = Object.keys(newData).join(", ");
