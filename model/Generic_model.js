@@ -60,32 +60,62 @@ class BaseModel {
     }
   }
 
-  async update(username, ID, updatedFields) {
-
+    async update(username, ID, updatedFields) {
     const setValues = [];
-    const setFields = [];
+    const setFieldsArray = [];
 
     for (const key in updatedFields) {
       if (Object.prototype.hasOwnProperty.call(updatedFields, key)) {
-        setFields.push(`\`${key}\` = ?`);
-        setValues.push(updatedFields[key]);
+        // Skip undefined values and empty objects
+        if (updatedFields[key] === undefined) {
+          continue;
+        }
+        
+        if (typeof updatedFields[key] === 'object' && 
+            Object.keys(updatedFields[key]).length === 0 && 
+            !Array.isArray(updatedFields[key])) {
+          setFieldsArray.push(`\`${key}\` = ?`);
+          setValues.push(null); // Replace empty object with null
+        } else {
+          setFieldsArray.push(`\`${key}\` = ?`);
+          setValues.push(updatedFields[key]);
+        }
       }
     }
 
-    const query = `UPDATE ${this.tableName} SET ${setFields.join(
-      ", "
-    )} WHERE Username = ? and ${this.ID} = ?`;
+    if (setFieldsArray.length === 0) {
+      return { affectedRows: 0, message: "No fields to update" };
+    }
+
+    const setClause = setFieldsArray.join(", ");
+    const query = `UPDATE ${this.tableName} SET ${setClause} WHERE Username = ? AND ${this.ID} = ?`;
+    
     setValues.push(username, ID);
     
     try {
+      console.log('Final query:', query);
+      console.log('Values:', JSON.stringify(setValues));
+      
       const result = await sql.query(query, setValues);
       return result;
     } catch (error) {
-      console.error(`Error executing query: ${query}, error`);
+      console.error(`Error executing query: ${query}`);
+      console.error(`Values: ${JSON.stringify(setValues)}`);
+      console.error(`Error: ${error.message}`);
       throw new Error(`Error updating data: ${error.message}`);
     }
   }
 
+  async deleteByUsername(username, ID) {
+    const query = `DELETE FROM ${this.tableName} WHERE Username = ? and ${this.ID} = ?`;
+
+    try {
+      const result = await sql.query(query, [username, ID]);
+      return result;
+    } catch (error) {
+      throw new Error(`Error deleting data: ${error.message}`);
+    }
+  }
   async deleteByUsername(username, ID) {
     const query = `DELETE FROM ${this.tableName} WHERE Username = ? and ${this.ID} = ?`;
 
